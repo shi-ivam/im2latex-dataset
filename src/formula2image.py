@@ -78,7 +78,9 @@ BASIC_SKELETON = r"""
 # Each rendering setup is done for each formula.
 # key/name is used to identify different renderings in dataset file
 
-RENDERING_SETUPS = {"basic": [BASIC_SKELETON, "./textogif -png -dpi 200 %s"]}
+RENDERING_SETUPS = {"basic": [BASIC_SKELETON, 
+                              "./textogif -png -dpi 200 %s",
+                              lambda filename: os.path.isfile(filename + ".png")]}
 #RENDERING_SETUPS = {"basic": [BASIC_SKELETON, 
 #                              "convert -density 200 -quality 100 %s.pdf %s.png",
 #                              lambda filename: os.path.isfile(filename + ".png")]
