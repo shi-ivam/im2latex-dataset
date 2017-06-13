@@ -45,7 +45,7 @@ from subprocess import call
 # Max number of formulas included
 MAX_NUMBER = 150*1000
 
-THREADS = 4
+THREADS = 6
 
 IMAGE_DIR = "formula_images"
 DATASET_FILE = "im2latex.lst"
@@ -78,11 +78,11 @@ BASIC_SKELETON = r"""
 # Each rendering setup is done for each formula.
 # key/name is used to identify different renderings in dataset file
 
-#RENDERING_SETUPS = {"basic": [BASIC_SKELETON, "./textogif -png -dpi 200 %s"]}
-RENDERING_SETUPS = {"basic": [BASIC_SKELETON, 
-                              "convert -density 200 -quality 100 %s.pdf %s.png",
-                              lambda filename: os.path.isfile(filename + ".png")]
-                   }
+RENDERING_SETUPS = {"basic": [BASIC_SKELETON, "./textogif -png -dpi 200 %s"]}
+#RENDERING_SETUPS = {"basic": [BASIC_SKELETON, 
+#                              "convert -density 200 -quality 100 %s.pdf %s.png",
+#                              lambda filename: os.path.isfile(filename + ".png")]
+#                   }
 
 def remove_temp_files(name):
     """ Removes .aux, .log, .pdf and .tex files for name """
@@ -97,7 +97,15 @@ def formula_to_image(formula):
     each rendering.
     Return None if couldn't render the formula"""
     formula = formula.strip("%")
-    name = hashlib.sha1(formula.encode('utf-8')).hexdigest()[:15]
+    try:
+        # Need try/catch block since some of the formulas have non-utf8 characters
+        # causing a UnicodeDecodeError exception
+        name = hashlib.sha1(formula.encode('utf-8')).hexdigest()[:15]
+    except Exception as e:
+        print(e)
+        print('Error processing formula line "%s". Moving on ...'%(formula,))
+        return None
+
     ret = []
     for rend_name, rend_setup in RENDERING_SETUPS.items():
         full_path = name+"_"+rend_name
@@ -112,19 +120,24 @@ def formula_to_image(formula):
             f.write(latex)
         
         # Call pdflatex to turn .tex into .pdf
-        code = call(["pdflatex", '-interaction=nonstopmode', '-halt-on-error', full_path+".tex"],
-                    stdout=DEVNULL, stderr=DEVNULL)
-        if code != 0:
-            os.system("rm -rf "+full_path+"*")
-            return None
+        # code = call(["pdflatex", '-interaction=nonstopmode', '-halt-on-error', full_path+".tex"],
+        #             stdout=DEVNULL, stderr=DEVNULL)
+        # if code != 0:
+        #     os.system("rm -rf "+full_path+"*")
+        #     return None
         
-        # Turn .pdf to .png
+        # Turn .pdf to .png if using pdflatex, else call textogif on the .tex file
         # Handles variable number of places to insert path.
         # i.e. "%s.tex" vs "%s.pdf %s.png"
         full_path_strings = rend_setup[1].count("%")*(full_path,)
-        code = call((rend_setup[1] % full_path_strings).split(" "),
-                    stdout=DEVNULL, stderr=DEVNULL)
-        
+        try:
+            code = call((rend_setup[1] % full_path_strings).split(" "),
+                        stdout=DEVNULL, stderr=DEVNULL)
+        except Exception as e:
+            print(e)
+            print('Error processing file %s. Moving on ...'%(full_path,))
+            code = -1
+
         #Remove files
         try:
             remove_temp_files(full_path)
@@ -171,7 +184,7 @@ def main(formula_list):
         names = [formula_to_image(formula) for formula in formulas]
     else:
         pool = Pool(THREADS)
-        names = list(pool.imap(formula_to_image, formulas))
+        names = list(pool.map(formula_to_image, formulas, 1000))
     
     os.chdir(oldcwd)
 
