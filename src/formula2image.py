@@ -95,16 +95,19 @@ def remove_temp_files(name):
     os.remove(name+".pdf")
     os.remove(name+".tex")
 
-def formula_to_image(formula):
+def formula_to_image(name_n_formula):
     """ Turns given formula into images based on RENDERING_SETUPS
     returns list of lists [[image_name, rendering_setup], ...], one list for
     each rendering.
     Return None if couldn't render the formula"""
+
+    name, formula = name_n_formula
     # formula = formula.strip("%")
     try:
         # Need try/catch block since some of the formulas have non-utf8 characters
         # causing a UnicodeDecodeError exception
-        name = hashlib.sha1(formula.encode('utf-8')).hexdigest()[:15]
+        if name is None:
+            name = hashlib.sha1(formula.encode('utf-8')).hexdigest()[:15]
     except Exception as e:
         print(e)
         print('Error processing formula line "%s". Moving on ...'%(formula,))
@@ -171,13 +174,13 @@ def formula_to_image(formula):
 def main(formula_list):
     if formula_list.endswith('.pkl'):
         df = pd.read_pickle(formula_list)
-        formulas = df.formula.values
-        image_names = df.image_name.values
+        formulas = df.predicted_seq.values
+        formula_names = df.index.values
     else:
         formulas = open(formula_list).read().split("\n")[:MAX_NUMBER]
-        image_names = [""] * len(formulas)
+        formula_names = [None] * len(formulas)
 
-    name_n_formula = zip(image_names, formulas)
+    names_n_formulas = zip(formula_names, formulas)
 
     try:
         os.mkdir(IMAGE_DIR)
@@ -194,10 +197,10 @@ def main(formula_list):
     names = None
     
     if DEBUG:
-        names = [formula_to_image(formula) for formula in formulas]
+        names = [formula_to_image(formula) for formula in names_n_formulas]
     else:
         pool = Pool(THREADS)
-        names = list(pool.map(formula_to_image, formulas, 1000))
+        names = list(pool.map(formula_to_image, names_n_formulas, 1000))
     
     os.chdir(oldcwd)
 
