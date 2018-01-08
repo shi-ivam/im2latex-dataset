@@ -41,13 +41,15 @@ import os
 import hashlib
 from multiprocessing import Pool
 from subprocess import call
+import pandas as pd
+
 
 # Max number of formulas included
-MAX_NUMBER = 150*1000
+MAX_NUMBER = -1  #150*1000
 
-THREADS = 6
+THREADS = None
 
-IMAGE_DIR = "formula_images"
+IMAGE_DIR = None  # "formula_images"
 DATASET_FILE = "im2latex.lst"
 NEW_FORMULA_FILE = "im2latex_formulas.lst"
 
@@ -98,7 +100,7 @@ def formula_to_image(formula):
     returns list of lists [[image_name, rendering_setup], ...], one list for
     each rendering.
     Return None if couldn't render the formula"""
-    formula = formula.strip("%")
+    # formula = formula.strip("%")
     try:
         # Need try/catch block since some of the formulas have non-utf8 characters
         # causing a UnicodeDecodeError exception
@@ -167,7 +169,16 @@ def formula_to_image(formula):
     
             
 def main(formula_list):
-    formulas = open(formula_list).read().split("\n")[:MAX_NUMBER]
+    if formula_list.endswith('.pkl'):
+        df = pd.read_pickle(formula_list)
+        formulas = df.formula.values
+        image_names = df.image_name.values
+    else:
+        formulas = open(formula_list).read().split("\n")[:MAX_NUMBER]
+        image_names = [""] * len(formulas)
+
+    name_n_formula = zip(image_names, formulas)
+
     try:
         os.mkdir(IMAGE_DIR)
     except OSError as e:
@@ -231,12 +242,13 @@ def check_validity(dataset_file, formula_file, formula_dir):
     print("%d files missing" % missing_files)
     
 if __name__ == '__main__':
-    if len(sys.argv) != 2 and len(sys.argv) != 4:
-        print("To generate datasets:           formula2image.py formulalist\n"+
+    if len(sys.argv) != 3 and len(sys.argv) != 4:
+        print("To generate datasets:           formula2image.py formulalist image_dir\n"+
               "To validate generated datasets: "+
                 "formula2image.py dataset_list formula_list formula_dir")
-    elif len(sys.argv) == 2:
+    elif len(sys.argv) == 3:
+        IMAGE_DIR = sys.argv[2]
         main(sys.argv[1])
     else:
-        check_validity(sys.argv[1], sys.argv[2], sys.argv[3]) 
+        check_validity(sys.argv[1], sys.argv[2], sys.argv[3])
 
