@@ -174,7 +174,7 @@ def formula_to_image(name_n_formula):
 def main(formula_list):
     if formula_list.endswith('.pkl'):
         df = pd.read_pickle(formula_list)
-        formulas = df.predicted_seq.values
+        formulas = df.pred_seq.values
         formula_names = df.index.values
     else:
         formulas = open(formula_list).read().split("\n")[:MAX_NUMBER]
