@@ -155,7 +155,7 @@ def formula_to_image(name_n_formula):
         
         # Detect of convert created multiple images -> multi-page PDF
         resulted_images = glob.glob(full_path+"-*") 
-        
+        print("Done "+full_path)
         if code != 0:
             # Error during rendering, remove files and return None
             os.system("rm -rf "+full_path+"*")
