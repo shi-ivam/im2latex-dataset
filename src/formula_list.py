@@ -106,7 +106,7 @@ for formula in formulas:
     else:
         dupes += 1
         if verbose:
-            print 'Ignoring duplicate formula %s'%formula_name
+            print ('Ignoring duplicate formula %s'%formula_name)
 
 assert good == len(data_map)
 mapDF = pd.DataFrame(data_map, columns=['image', 'formula_name', 'latex'])
