@@ -59,12 +59,15 @@ def main(directory):
         files = tar.getnames()
         #Loop over and extract results
         for latex_name in files:
-            if not "/" in latex_name: #.getnames() includes directory-only
+            try:
+                        if not "/" in latex_name: #.getnames() includes directory-only
                 continue
-            tar.extract(latex_name)
-            latex = open(latex_name).read()
-            formulas.extend(get_formulas(latex))
-            os.remove(latex_name)
+                        tar.extract(latex_name)
+                        latex = open(latex_name).read()
+                        formulas.extend(get_formulas(latex))
+                        os.remove(latex_name)
+            except:
+                        pass
         ctr += 1
         print("Done {} of {}".format(ctr, len(latex_tars)))
     formulas = list(set(formulas))
