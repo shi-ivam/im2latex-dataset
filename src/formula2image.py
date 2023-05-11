@@ -136,6 +136,7 @@ def formula_to_image(name_n_formula):
         # Turn .pdf to .png if using pdflatex, else call textogif on the .tex file
         # Handles variable number of places to insert path.
         # i.e. "%s.tex" vs "%s.pdf %s.png"
+        print(full_path)
         full_path_strings = rend_setup[1].count("%")*(full_path,)
         try:
             code = call((rend_setup[1] % full_path_strings).split(" "),
